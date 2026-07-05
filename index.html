@@ -27,9 +27,9 @@
         <div class="panel-title">
           <h2>1. 事实输入（Fact Input）</h2>
           <div class="button-row">
-            <button id="load-default" class="primary">加载默认案例（Load Default Case）</button>
-            <button id="clear-facts">清空事实（Clear Facts）</button>
-            <button id="run-inference" class="accent">运行推理（Run Inference）</button>
+            <button id="load-default" class="primary" type="button">加载默认案例（Load Default Case）</button>
+            <button id="clear-facts" type="button">清空事实（Clear Facts）</button>
+            <button id="run-inference" class="accent" type="button">运行推理（Run Inference）</button>
           </div>
         </div>
         <form id="fact-form" class="fact-form">
@@ -79,6 +79,10 @@
       <p>Educational demo for knowledge representation and rule-based reasoning.</p>
     </footer>
 
-    <script type="module" src="./src/app.js"></script>
+    <script src="./src/facts.js"></script>
+    <script src="./src/rules.js"></script>
+    <script src="./src/inferenceEngine.js"></script>
+    <script src="./src/renderer.js"></script>
+    <script src="./src/app.js"></script>
   </body>
 </html>
