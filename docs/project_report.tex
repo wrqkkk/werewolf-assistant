@@ -1,0 +1,34 @@
+\documentclass{ctexart}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{hyperref}
+
+\title{基于规则推理的狼人杀局势分析助手}
+\author{姓名：\underline{\hspace{4cm}} 学号：\underline{\hspace{4cm}}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+本项目构建了一个基于规则推理的狼人杀局势分析系统。系统将玩家行为表示为结构化事实，并通过显式规则进行前向链推理，实现局势冲突识别与推理过程可视化。
+\end{abstract}
+
+\section{项目概述}
+系统将狼人杀局势表示为事实与规则组成的知识库，并通过推理引擎自动生成中间结论与推理轨迹。
+
+\section{知识表示}
+事实包括claim、check、vote、dead四类。规则用于描述身份冲突、查验矛盾与投票结构。
+
+\section{推理方法}
+采用前向链推理，从初始事实出发不断触发规则生成新事实，直到收敛。
+
+\section{系统结构}
+纯前端实现：index.html + src/js模块 + rules + inference engine。
+
+\section{运行方式}
+直接打开index.html即可运行，无需后端。
+
+\section{扩展方向}
+未来可扩展自然语言解析、概率推理与更复杂角色系统。
+
+\end{document}
