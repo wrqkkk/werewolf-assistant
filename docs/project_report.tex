@@ -1,1 +1,158 @@
-(kept unchanged see previous tool response; full file already provided in prior step)
+\documentclass[UTF8,12pt]{ctexart}
+\usepackage[a4paper,margin=2.25cm]{geometry}
+\usepackage{booktabs,longtable,array,xcolor,hyperref,listings,enumitem}
+\definecolor{codebg}{RGB}{247,244,238}
+\definecolor{mainpurple}{RGB}{75,46,131}
+\lstset{backgroundcolor=\color{codebg},basicstyle=\ttfamily\small,breaklines=true,frame=single,rulecolor=\color{mainpurple},columns=fullflexible}
+\title{基于规则推理的狼人杀局势分析助手\\[4pt]\large 作业二：知识表示项目说明}
+\author{姓名：\underline{\hspace{4cm}}\quad 学号：\underline{\hspace{4cm}}}
+\date{\today}
+\begin{document}
+\maketitle
+\begin{abstract}
+本项目是一个面向狼人杀简化局势的知识表示与规则推理应用。系统将玩家声明、查验结果、投票记录和死亡信息表示为结构化事实（facts），将狼人杀中的基本逻辑表示为规则（rules），再通过前向链推理（forward chaining）自动识别身份冲突、查验矛盾、依赖型身份声明、投票分裂和局势关注点。项目采用纯前端网页实现，打开 \texttt{index.html} 即可运行；它的重点是把狼人杀复盘中常见的“对跳”“金水/查杀”“站边”“票型压力”等局势语言，转化为可以被追踪、复核和解释的事实-规则链。
+\end{abstract}
+\noindent\textbf{GitHub 项目地址：}\url{https://github.com/wrqkkk/werewolf-assistant}
+
+\section{选题分析}
+\subsection{选题背景}
+狼人杀是一类典型的不完全信息游戏。玩家无法直接观察所有人的真实身份，只能根据发言、投票、死亡和查验声明等局部信息做出判断。狼人杀非常适合用知识表示方法处理，因为一局游戏中的关键信息本身就具有清晰的对象、关系和时间顺序：谁声明了什么身份，谁查验了谁，谁把票投给了谁，谁在什么阶段死亡。常见的复盘术语，例如“预言家对跳”“金水”“查杀”“站边”“票型分裂”和“抗推压力”，本质上都可以拆解为事实之间的关系，并进一步写成可触发的显式规则。
+
+本项目选择狼人杀作为应用场景，是因为它同时具有以下特点：
+\begin{itemize}[leftmargin=2em]
+\item 信息来源清晰：玩家声明、查验、投票、死亡都可以转化为结构化事实；
+\item 推理规则清晰：唯一身份冲突、查验矛盾、投票卷入冲突等关系可以用 if--then 形式表达；
+\item 复盘语言天然规则化：狼人杀讨论常围绕“谁和谁对跳”“谁给谁金水/查杀”“谁的票型站在哪一边”“某条信息依赖谁的身份可信度”展开，这些表述非常适合转写为可追踪的规则链；
+\item 解释价值明显：玩家在复盘时关心的不只是某个结论本身，还关心这个结论由哪些发言、查验和投票线索支持。规则推理可以把这种推理过程逐步展示出来。
+\end{itemize}
+
+\subsection{需求分析}
+在狼人杀局势讨论中，玩家通常需要先把局面中的关键矛盾整理清楚，再进一步讨论身份倾向。例如：是否存在预言家对跳；同一个玩家是否同时被给出“金水”和“查杀”；投票是否围绕对跳双方形成站边；死亡后继续发言或投票的事件是否应被排除。这些问题都不是单纯的情绪判断，而是可以被拆成可记录、可匹配、可复核的事实关系。
+
+本项目以局势梳理为目标：把对跳、查验和票型拆成可复核的 facts 和 rules，输出身份冲突、查验矛盾、依赖型声明和投票关注点，帮助用户在复盘时看清当前局面的关键矛盾和推理链条。
+
+\subsection{用户群体与应用价值}
+本项目面向三类用户：课程学习者可以用它理解知识表示、产生式规则和前向链推理；狼人杀新手玩家可以用它整理对跳、查验和投票关系；初学开发者可以用它学习如何把自然语言规则转化为可运行程序。相比只给出一段自然语言建议的聊天式工具，本项目更强调推理依据的结构化呈现：所有输入都被转化为 facts，所有推理都由显式 rules 触发，每一步规则触发都会生成 trace。
+
+\section{方法介绍}
+\subsection{知识表示}
+本项目将狼人杀局势表示为一个知识库（Knowledge Base）。知识库包含事实和规则两类内容。
+\begin{longtable}{p{3cm}p{10cm}}\toprule
+类型 & 含义 \\\midrule
+事实（Facts） & 用户输入或规则推出的结构化信息，例如 \texttt{claim(P1, Seer, Day1)}。 \\
+规则（Rules） & 可触发的 if--then 推理条件，例如两个玩家都声明 Seer 时推出身份冲突。 \\
+推理轨迹（Trace） & 记录每一步由哪些事实触发哪条规则，并推出什么新事实。 \\\bottomrule
+\end{longtable}
+
+\subsection{前向链推理}
+系统采用前向链推理。其基本思想是从已有事实出发，不断扫描规则库。如果某条规则的前提被当前知识库满足，系统就触发该规则，生成新的事实，并把新事实加入知识库。这个过程持续进行，直到没有新的事实可以推出。
+\begin{lstlisting}
+while new facts are generated:
+    for each rule in rule_base:
+        matches = rule.when(facts, inferred)
+        for each match:
+            new_fact = rule.then(match)
+            if new_fact is not already known:
+                add new_fact to knowledge base
+                record reasoning trace
+\end{lstlisting}
+
+\section{程序结构说明}
+本项目采用纯前端实现，不需要后端服务和数据库，打开 \texttt{index.html} 即可运行。
+\begin{longtable}{p{4cm}p{9cm}}\toprule
+文件 & 作用 \\\midrule
+\texttt{index.html} & 页面入口，包含事实输入、当前知识库、推理轨迹、局势总结和规则库展示区域。 \\
+\texttt{assets/style.css} & 页面样式，定义面板、卡片、规则分类颜色和响应式布局。 \\
+\texttt{src/facts.js} & 定义玩家、身份、阶段、默认事实、事实生成函数、事实去重键和事实文本描述。 \\
+\texttt{src/rules.js} & 定义 R1--R12 规则库。每条规则包含 \texttt{when}、\texttt{then} 和 \texttt{explain}。 \\
+\texttt{src/inferenceEngine.js} & 实现前向链推理循环，并生成推理轨迹。 \\
+\texttt{src/renderer.js} & 将事实、规则、推理轨迹和局势总结渲染到页面上。 \\
+\texttt{src/app.js} & 负责页面交互、表单读取、默认案例加载和局势总结生成。 \\
+\texttt{examples/default\_case.json} & 默认案例，便于展示系统的完整推理效果。 \\\bottomrule
+\end{longtable}
+
+\section{事实与规则设计}
+\subsection{事实类型}
+\begin{longtable}{p{3cm}p{5cm}p{5cm}}\toprule
+事件类型 & 内部表示 & 示例 \\\midrule
+身份声明 & \texttt{claim(player, role, phase)} & \texttt{claim(P1, Seer, Day1)} \\
+查验结果 & \texttt{check(seer, target, result, phase)} & \texttt{check(P1, P3, Good, Day1)} \\
+投票记录 & \texttt{vote(voter, target, phase)} & \texttt{vote(P4, P1, Day1)} \\
+死亡信息 & \texttt{dead(player, phase)} & \texttt{dead(P6, Night1)} \\\bottomrule
+\end{longtable}
+其中，\texttt{check(P1, P3, Good)} 并不表示 P3 一定是好人，而只表示 P1 声称 P3 是好人。系统会继续根据 P1 是否处于身份冲突、是否与其他查验矛盾等规则分析该事实的局势意义。
+
+\subsection{规则库分类}
+第一版规则库包含 12 条规则，分为三类：
+\begin{longtable}{p{3.5cm}p{3cm}p{6.5cm}}\toprule
+规则类别 & 编号 & 作用 \\\midrule
+硬逻辑规则 & R1--R5 & 识别预言家对跳、至少一假、查验矛盾、核心对跳、死亡后事件无效。 \\
+依赖型声明规则 & R6--R8 & 记录“某人声称了什么”，例如某目标被声称为好人或狼人。 \\
+软性关注规则 & R9--R12 & 识别投票卷入冲突、投票分裂、多人投票和冲突玩家承压。 \\\bottomrule
+\end{longtable}
+
+\section{关键代码说明}
+\subsection{事实去重}
+系统使用 \texttt{factKey} 将同一事实映射为唯一键，避免前向链推理过程中重复生成同一中间事实。
+\begin{lstlisting}
+const key = window.WF.factKey(newFact);
+const exists = [...facts, ...inferred].some(
+    fact => window.WF.factKey(fact) === key
+);
+\end{lstlisting}
+
+\subsection{规则结构与推理轨迹}
+每条规则包含 \texttt{when}、\texttt{then} 和 \texttt{explain}。推理引擎在每次触发规则时记录 step、ruleId、matchedFacts、inferredFact 和 explanation。这样每个输出都有事实来源和规则依据，用户可以复核系统是如何一步步把原始局势转化为冲突链和关注点的。
+
+\section{运行界面与示例}
+\subsection{默认案例}
+\begin{lstlisting}
+claim(P1, Seer, Day1)
+claim(P2, Seer, Day1)
+check(P1, P3, Good, Day1)
+check(P2, P3, Wolf, Day1)
+vote(P4, P1, Day1)
+vote(P5, P2, Day1)
+dead(P6, Night1)
+\end{lstlisting}
+运行后，系统应推出：P1/P2 形成预言家对跳；P1/P2 对 P3 的查验结果冲突；P3 处于相反声明下；P4/P5 的投票卷入核心冲突，并围绕对跳双方产生投票分裂。
+
+\subsection{手动输入案例}
+录屏时可以清空默认案例，手动输入以下事实：
+\begin{lstlisting}
+claim(P1, Seer, Day1)
+claim(P2, Seer, Day1)
+check(P1, P3, Good, Day1)
+check(P2, P3, Wolf, Day1)
+vote(P4, P1, Day1)
+vote(P5, P1, Day1)
+vote(P6, P2, Day1)
+\end{lstlisting}
+该案例不是内置代码写死的。它可以额外触发 \texttt{multiple\_votes\_on(P1, Day1)} 和 \texttt{conflict\_player\_under\_pressure(P1, Day1)}，说明系统可以根据用户手动输入事实动态推理。
+
+如果需要单独展示死亡后事件无效规则 R5，可以再输入：
+\begin{lstlisting}
+dead(P6, Night1)
+vote(P6, P1, Day1)
+\end{lstlisting}
+此时系统会识别 P6 已经在 Night1 死亡，其 Day1 投票应被标记为 \texttt{invalid\_event}。
+
+\section{数据说明}
+本项目没有使用外部数据集。系统的数据来源是用户在网页表单中输入的结构化事实，以及项目提供的默认案例 \texttt{examples/default\_case.json}。因此提交材料中的“数据（如果有）”可以说明为：本项目无外部数据集，仅包含默认案例 JSON 和用户运行时输入。
+
+\section{AI 辅助开发说明}
+本项目在以下环节使用 AI 辅助：将课程中的知识表示、事实、规则、产生式系统和前向链推理概念转化为项目设计；设计 R1--R12 规则库；生成和修改 JavaScript 代码；编写 README、规则库设计文档和本项目说明；设计录屏讲解 PPT 和手动输入案例。AI 的作用主要是辅助结构化、生成初稿和检查一致性，项目最终逻辑由开发者根据课程要求进行选择、整理和确认。
+
+\section{局限性与改进方向}
+当前版本仍有明显简化：不处理自然语言发言，只处理结构化输入；不进行概率身份评分；不枚举所有可能身份世界；只支持简化 6 人局和 Seer/Werewolf/Villager 三类身份。后续可以扩展为：加入女巫、猎人、守卫等角色；加入自然语言到结构化事实的转换；加入图结构可视化；在符号规则上叠加概率评分。
+
+\section{交付物清单}
+\begin{longtable}{p{3cm}p{10cm}}\toprule
+类别 & 内容 \\\midrule
+代码 & \texttt{index.html}, \texttt{assets/style.css}, \texttt{src/*.js} \\
+文档 & \texttt{README.md}, \texttt{docs/rulebase\_design.md}, \texttt{docs/work\_summary\_v1.md}, \texttt{docs/project\_report.tex}, \texttt{docs/project\_report.pdf} \\
+数据 & 无外部数据；仅包含 \texttt{examples/default\_case.json} 作为默认示例。 \\
+录屏说明 & \texttt{werewolf\_kr\_rule\_assistant\_demo.pptx}，用于 3 分钟以内录屏讲解。 \\
+项目地址 & \url{https://github.com/wrqkkk/werewolf-assistant} \\\bottomrule
+\end{longtable}
+\end{document}
