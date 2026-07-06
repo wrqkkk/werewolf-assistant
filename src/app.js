@@ -1,20 +1,55 @@
-import { DEFAULT_FACTS, makeFact } from "./facts.js";
-import { runInference } from "./inferenceEngine.js";
-import { renderFacts, renderInferred, renderTrace, renderRules } from "./renderer.js";
-import { RULES } from "./rules.js";
+window.WF = window.WF || {};
 
-let facts = [...DEFAULT_FACTS];
+window.WF.facts = [...window.WF.DEFAULT_FACTS];
 
-function refresh() {
-  const result = runInference(facts);
+function extractSummary(inferred) {
+  const lines = [];
 
-  renderFacts(document.getElementById("knowledge-base"), result.facts);
-  renderInferred(document.getElementById("knowledge-base"), result.inferred);
-  renderTrace(document.getElementById("reasoning-trace"), result.trace);
-  renderRules(document.getElementById("rule-base"));
+  const conflicts = inferred.filter(f => f.type === "seer_pair_conflict");
+  const contradictions = inferred.filter(f => f.type === "check_contradiction");
+  const votes = inferred.filter(f => f.type === "vote_related_to_conflict");
+  const pressure = inferred.filter(f => f.type === "conflict_player_under_pressure");
+  const split = inferred.filter(f => f.type === "voting_split_on_seer_pair");
+
+  for (const c of conflicts) {
+    lines.push(`${c.player1} 与 ${c.player2} 形成预言家对跳，因此存在身份冲突。`);
+  }
+
+  for (const c of contradictions) {
+    lines.push(`${c.goodClaimer} 与 ${c.wolfClaimer} 对同一目标查验结果冲突。`);
+  }
+
+  for (const v of votes) {
+    lines.push(`${v.voter} 的投票卷入核心冲突，当前已进入站边信息阶段。`);
+  }
+
+  for (const s of split) {
+    lines.push(`${s.player1} 与 ${s.player2} 在投票上出现分裂。`);
+  }
+
+  for (const p of pressure) {
+    lines.push(`${p.player} 在 ${p.phase} 处于投票压力之下。`);
+  }
+
+  return lines;
 }
 
-function setupForm() {
+window.WF.refresh = function refresh() {
+  const result = window.WF.runInference(window.WF.facts);
+
+  const kb = document.getElementById("knowledge-base");
+  const trace = document.getElementById("reasoning-trace");
+  const summary = document.getElementById("summary");
+
+  window.WF.renderFacts(kb, result.facts);
+  window.WF.renderInferred(kb, result.inferred);
+  window.WF.renderTrace(trace, result.trace);
+
+  const lines = extractSummary(result.inferred);
+  summary.innerHTML = lines.length ? lines.join("<br/>") : "暂无结论";
+};
+
+window.WF.setupForm = function setupForm() {
   const form = document.getElementById("fact-form");
   const typeSelect = document.getElementById("event-type");
   const dynamic = document.getElementById("dynamic-fields");
@@ -24,48 +59,49 @@ function setupForm() {
 
     if (type === "claim") {
       dynamic.innerHTML = `
-        <label>玩家（Player）<input id="p" placeholder="P1" /></label>
-        <label>身份（Role）<input id="r" placeholder="Seer" /></label>
-        <label>阶段（Phase）<input id="ph" placeholder="Day1" /></label>
+        <label>玩家<input id="p" /></label>
+        <label>身份<input id="r" /></label>
+        <label>阶段<input id="ph" /></label>
       `;
     }
 
     if (type === "check") {
       dynamic.innerHTML = `
-        <label>预言家（Seer）<input id="s" placeholder="P1" /></label>
-        <label>目标（Target）<input id="t" placeholder="P3" /></label>
-        <label>结果（Result）<input id="res" placeholder="Good/Wolf" /></label>
+        <label>预言家<input id="s" /></label>
+        <label>目标<input id="t" /></label>
+        <label>结果<input id="res" /></label>
+        <label>阶段<input id="ph" /></label>
       `;
     }
 
     if (type === "vote") {
       dynamic.innerHTML = `
-        <label>投票者（Voter）<input id="v" placeholder="P4" /></label>
-        <label>目标（Target）<input id="t" placeholder="P1" /></label>
-        <label>阶段（Phase）<input id="ph" placeholder="Day1" /></label>
+        <label>投票者<input id="v" /></label>
+        <label>目标<input id="t" /></label>
+        <label>阶段<input id="ph" /></label>
       `;
     }
 
     if (type === "dead") {
       dynamic.innerHTML = `
-        <label>死亡玩家（Player）<input id="p" placeholder="P6" /></label>
-        <label>阶段（Phase）<input id="ph" placeholder="Night1" /></label>
+        <label>死亡玩家<input id="p" /></label>
+        <label>阶段<input id="ph" /></label>
       `;
     }
   }
 
-  typeSelect.addEventListener("change", e => renderFields(e.target.value));
+  typeSelect.onchange = (e) => renderFields(e.target.value);
   renderFields(typeSelect.value);
 
-  form.addEventListener("submit", e => {
+  form.onsubmit = (e) => {
     e.preventDefault();
 
     const type = typeSelect.value;
 
-    let fact;
+    let fact = null;
 
     if (type === "claim") {
-      fact = makeFact("claim", {
+      fact = window.WF.makeFact("claim", {
         player: p.value,
         role: r.value,
         phase: ph.value
@@ -73,16 +109,16 @@ function setupForm() {
     }
 
     if (type === "check") {
-      fact = makeFact("check", {
+      fact = window.WF.makeFact("check", {
         seer: s.value,
         target: t.value,
         result: res.value,
-        phase: "Day1"
+        phase: ph.value
       });
     }
 
     if (type === "vote") {
-      fact = makeFact("vote", {
+      fact = window.WF.makeFact("vote", {
         voter: v.value,
         target: t.value,
         phase: ph.value
@@ -90,36 +126,36 @@ function setupForm() {
     }
 
     if (type === "dead") {
-      fact = makeFact("dead", {
+      fact = window.WF.makeFact("dead", {
         player: p.value,
         phase: ph.value
       });
     }
 
-    facts.push(fact);
-    refresh();
-  });
-}
+    window.WF.facts.push(fact);
+    window.WF.refresh();
+  };
+};
 
-function bindButtons() {
+window.WF.bindButtons = function bindButtons() {
   document.getElementById("load-default").onclick = () => {
-    facts = [...DEFAULT_FACTS];
-    refresh();
+    window.WF.facts = [...window.WF.DEFAULT_FACTS];
+    window.WF.refresh();
   };
 
   document.getElementById("clear-facts").onclick = () => {
-    facts = [];
-    refresh();
+    window.WF.facts = [];
+    window.WF.refresh();
   };
 
   document.getElementById("run-inference").onclick = () => {
-    refresh();
+    window.WF.refresh();
   };
-}
+};
 
 window.addEventListener("DOMContentLoaded", () => {
-  setupForm();
-  bindButtons();
-  refresh();
-  renderRules(document.getElementById("rule-base"));
+  window.WF.setupForm();
+  window.WF.bindButtons();
+  window.WF.refresh();
+  window.WF.renderRules(document.getElementById("rule-base"));
 });
