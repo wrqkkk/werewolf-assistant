@@ -1,7 +1,6 @@
-import { RULES } from "./rules.js";
-import { factKey } from "./facts.js";
+window.WF = window.WF || {};
 
-export function runInference(initialFacts) {
+window.WF.runInference = function runInference(initialFacts) {
   const facts = [...initialFacts];
   const inferred = [];
   const trace = [];
@@ -11,23 +10,26 @@ export function runInference(initialFacts) {
   while (changed) {
     changed = false;
 
-    for (const rule of RULES) {
+    for (const rule of window.WF.RULES) {
       const matches = rule.when(facts, inferred);
 
       for (const m of matches) {
         const newFact = rule.then(m);
-        const key = factKey(newFact);
+        const key = window.WF.factKey(newFact);
 
-        const exists = [...facts, ...inferred].some(f => factKey(f) === key);
+        const exists = [...facts, ...inferred].some(f => window.WF.factKey(f) === key);
 
         if (!exists) {
           inferred.push(newFact);
+
           trace.push({
             ruleId: rule.id,
             ruleName: rule.name,
             input: m,
-            output: newFact
+            output: newFact,
+            explanation: rule.explain ? rule.explain(m) : ""
           });
+
           changed = true;
         }
       }
@@ -35,4 +37,4 @@ export function runInference(initialFacts) {
   }
 
   return { facts, inferred, trace };
-}
+};
