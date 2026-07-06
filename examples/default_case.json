@@ -1,0 +1,11 @@
+{
+  "facts": [
+    {"type":"claim","player":"P1","role":"Seer","phase":"Day1"},
+    {"type":"claim","player":"P2","role":"Seer","phase":"Day1"},
+    {"type":"check","seer":"P1","target":"P3","result":"Good","phase":"Day1"},
+    {"type":"check","seer":"P2","target":"P3","result":"Wolf","phase":"Day1"},
+    {"type":"vote","voter":"P4","target":"P1","phase":"Day1"},
+    {"type":"vote","voter":"P5","target":"P2","phase":"Day1"},
+    {"type":"dead","player":"P6","phase":"Night1"}
+  ]
+}

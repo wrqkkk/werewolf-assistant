@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>狼人杀知识表示助手（Werewolf KR Assistant）</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Knowledge Representation · Rule-Based Reasoning · Forward Chaining</p>
+        <h1>狼人杀知识表示助手（Werewolf Knowledge Representation Assistant）</h1>
+        <p class="hero-text">
+          将狼人杀局势表示为事实和规则，通过前向链推理识别预言家对跳、查验矛盾、投票关注点和可解释推理链。
+        </p>
+      </div>
+      <div class="hero-card">
+        <span>6 人简化局</span>
+        <strong>2 狼人 · 1 预言家 · 3 平民</strong>
+        <small>阵营：the Werewolves / the Villagers</small>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel span-2">
+        <div class="panel-title">
+          <h2>1. 事实输入（Fact Input）</h2>
+          <div class="button-row">
+            <button id="load-default" class="primary" type="button">加载默认案例（Load Default Case）</button>
+            <button id="clear-facts" type="button">清空事实（Clear Facts）</button>
+            <button id="run-inference" class="accent" type="button">运行推理（Run Inference）</button>
+          </div>
+        </div>
+        <form id="fact-form" class="fact-form">
+          <label>
+            事件类型（Event Type）
+            <select id="event-type">
+              <option value="claim">身份声明（Role Claim）</option>
+              <option value="check">预言家查验（Seer Check）</option>
+              <option value="vote">投票记录（Vote）</option>
+              <option value="dead">死亡信息（Death）</option>
+            </select>
+          </label>
+
+          <div id="dynamic-fields" class="dynamic-fields"></div>
+
+          <button type="submit" class="primary">添加事实（Add Fact）</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>2. 游戏设定（Game Setup）</h2>
+        <div id="game-setup" class="card-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>3. 当前知识库（Current Knowledge Base）</h2>
+        <div id="knowledge-base" class="fact-list empty-state">暂无事实。请添加事实或加载默认案例。</div>
+      </section>
+
+      <section class="panel span-2">
+        <h2>4. 推理轨迹（Reasoning Trace）</h2>
+        <div id="reasoning-trace" class="trace-list empty-state">运行推理后，这里会显示每一步触发的规则。</div>
+      </section>
+
+      <section class="panel span-2">
+        <h2>5. 局势总结（Situation Summary）</h2>
+        <div id="summary" class="summary empty-state">运行推理后，这里会生成可解释的局势总结。</div>
+      </section>
+
+      <section class="panel span-2">
+        <h2>6. 规则库 v1（Rule Base v1）</h2>
+        <div id="rule-base" class="rule-grid"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Educational demo for knowledge representation and rule-based reasoning.</p>
+    </footer>
+
+    <script src="./src/facts.js"></script>
+    <script src="./src/rules.js"></script>
+    <script src="./src/inferenceEngine.js"></script>
+    <script src="./src/renderer.js"></script>
+    <script src="./src/app.js"></script>
+  </body>
+</html>
