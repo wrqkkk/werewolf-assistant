@@ -1,20 +1,22 @@
-export const PLAYERS = ["P1", "P2", "P3", "P4", "P5", "P6"];
+window.WF = window.WF || {};
 
-export const ROLES = [
+window.WF.PLAYERS = ["P1", "P2", "P3", "P4", "P5", "P6"];
+
+window.WF.ROLES = [
   { id: "Seer", label: "预言家（Seer）", camp: "the Villagers" },
   { id: "Werewolf", label: "狼人（Werewolf）", camp: "the Werewolves" },
   { id: "Villager", label: "平民（Villager）", camp: "the Villagers" }
 ];
 
-export const CAMPS = [
+window.WF.CAMPS = [
   { id: "the Werewolves", label: "狼人阵营（the Werewolves）" },
   { id: "the Villagers", label: "村民阵营（the Villagers）" }
 ];
 
-export const PHASES = ["Night1", "Day1", "Night2", "Day2", "Night3", "Day3"];
-export const CHECK_RESULTS = ["Good", "Wolf"];
+window.WF.PHASES = ["Night1", "Day1", "Night2", "Day2", "Night3", "Day3"];
+window.WF.CHECK_RESULTS = ["Good", "Wolf"];
 
-export const DEFAULT_FACTS = [
+window.WF.DEFAULT_FACTS = [
   { id: "F001", type: "claim", player: "P1", role: "Seer", phase: "Day1", origin: "initial" },
   { id: "F002", type: "claim", player: "P2", role: "Seer", phase: "Day1", origin: "initial" },
   { id: "F003", type: "check", seer: "P1", target: "P3", result: "Good", phase: "Day1", origin: "initial" },
@@ -26,51 +28,51 @@ export const DEFAULT_FACTS = [
 
 let nextFactNumber = 100;
 
-export function cloneFacts(facts) {
+window.WF.cloneFacts = function cloneFacts(facts) {
   return facts.map((fact) => ({ ...fact }));
-}
+};
 
-export function makeFact(type, payload = {}) {
+window.WF.makeFact = function makeFact(type, payload = {}) {
   nextFactNumber += 1;
   return {
     id: `F${String(nextFactNumber).padStart(3, "0")}`,
     type,
-    origin: payload.origin ?? "initial",
+    origin: payload.origin || "initial",
     ...payload
   };
-}
+};
 
-export function canonicalPair(a, b) {
+window.WF.canonicalPair = function canonicalPair(a, b) {
   return [a, b].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
-}
+};
 
-export function phaseIndex(phase) {
-  const index = PHASES.indexOf(phase);
+window.WF.phaseIndex = function phaseIndex(phase) {
+  const index = window.WF.PHASES.indexOf(phase);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
-}
+};
 
-export function isLaterPhase(phaseA, phaseB) {
-  return phaseIndex(phaseA) > phaseIndex(phaseB);
-}
+window.WF.isLaterPhase = function isLaterPhase(phaseA, phaseB) {
+  return window.WF.phaseIndex(phaseA) > window.WF.phaseIndex(phaseB);
+};
 
-export function factKey(fact) {
+window.WF.factKey = function factKey(fact) {
   switch (fact.type) {
     case "claim":
-      return `claim:${fact.player}:${fact.role}:${fact.phase ?? ""}`;
+      return `claim:${fact.player}:${fact.role}:${fact.phase || ""}`;
     case "check":
-      return `check:${fact.seer}:${fact.target}:${fact.result}:${fact.phase ?? ""}`;
+      return `check:${fact.seer}:${fact.target}:${fact.result}:${fact.phase || ""}`;
     case "vote":
-      return `vote:${fact.voter}:${fact.target}:${fact.phase ?? ""}`;
+      return `vote:${fact.voter}:${fact.target}:${fact.phase || ""}`;
     case "dead":
       return `dead:${fact.player}:${fact.phase}`;
     case "role_conflict":
-      return `role_conflict:${fact.player1}:${fact.player2}:${fact.role}`;
+      return `role_conflict:${window.WF.canonicalPair(fact.player1, fact.player2).join(":")}:${fact.role}`;
     case "at_least_one_fake":
-      return `at_least_one_fake:${fact.player1}:${fact.player2}:${fact.role}`;
+      return `at_least_one_fake:${window.WF.canonicalPair(fact.player1, fact.player2).join(":")}:${fact.role}`;
     case "check_contradiction":
       return `check_contradiction:${fact.goodClaimer}:${fact.wolfClaimer}:${fact.target}`;
     case "seer_pair_conflict":
-      return `seer_pair_conflict:${canonicalPair(fact.player1, fact.player2).join(":")}`;
+      return `seer_pair_conflict:${window.WF.canonicalPair(fact.player1, fact.player2).join(":")}`;
     case "claimed_good_by":
       return `claimed_good_by:${fact.target}:${fact.claimant}`;
     case "claimed_wolf_by":
@@ -80,7 +82,7 @@ export function factKey(fact) {
     case "vote_related_to_conflict":
       return `vote_related_to_conflict:${fact.voter}:${fact.target}:${fact.phase}`;
     case "voting_split_on_seer_pair":
-      return `voting_split_on_seer_pair:${canonicalPair(fact.player1, fact.player2).join(":")}:${canonicalPair(fact.voter1, fact.voter2).join(":")}:${fact.phase}`;
+      return `voting_split_on_seer_pair:${window.WF.canonicalPair(fact.player1, fact.player2).join(":")}:${window.WF.canonicalPair(fact.voter1, fact.voter2).join(":")}:${fact.phase}`;
     case "multiple_votes_on":
       return `multiple_votes_on:${fact.target}:${fact.phase}`;
     case "conflict_player_under_pressure":
@@ -90,9 +92,9 @@ export function factKey(fact) {
     default:
       return JSON.stringify(fact);
   }
-}
+};
 
-export function describeFact(fact) {
+window.WF.describeFact = function describeFact(fact) {
   switch (fact.type) {
     case "claim":
       return `claim(${fact.player}, ${fact.role}, ${fact.phase})`;
@@ -129,9 +131,9 @@ export function describeFact(fact) {
     default:
       return JSON.stringify(fact);
   }
-}
+};
 
-export function describeFactInChinese(fact) {
+window.WF.describeFactInChinese = function describeFactInChinese(fact) {
   switch (fact.type) {
     case "claim":
       return `${fact.player} 在 ${fact.phase} 声明自己是 ${fact.role}。`;
@@ -166,10 +168,10 @@ export function describeFactInChinese(fact) {
     case "invalid_event":
       return `发现无效事件：${fact.invalidFactId} 对应玩家已经死亡，原因是 ${fact.reason}。`;
     default:
-      return describeFact(fact);
+      return window.WF.describeFact(fact);
   }
-}
+};
 
-export function toSentenceList(facts) {
-  return facts.map(describeFactInChinese);
-}
+window.WF.toSentenceList = function toSentenceList(facts) {
+  return facts.map(window.WF.describeFactInChinese);
+};
